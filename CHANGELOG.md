@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Fixed
+- `RedisClient#pubsub` now returns a namespace-aware `PubSub` when a `namespace` is configured, so `SUBSCRIBE`/`PSUBSCRIBE`/`PUBLISH` issued via `.pubsub` are namespaced consistently with commands issued via `.call`/`.pipelined`. Previously `RedisClient::PubSub` bypassed the middleware chain entirely, so Pub/Sub channels/patterns were never namespaced regardless of configuration, while ordinary `PUBLISH` calls were. The namespace prefix is also stripped automatically from `channel`/`pattern` on `subscribe`/`psubscribe`/`message`/`pmessage` events.
+
 ## [0.2.0] - 2025-08-01
 
 ### Added
