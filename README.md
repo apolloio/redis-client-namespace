@@ -149,23 +149,29 @@ The gem automatically detects which arguments are keys and applies the namespace
 
 Commands not explicitly supported by the gem will generate a warning and be passed through without namespace transformation. This ensures compatibility but means namespace isolation may not work for newer or less common Redis commands.
 
-#### Pub/Sub Events
+#### Pub/Sub
 
-When using the Middleware approach, Pub/Sub subscribe events (via `pubsub.next_event`) are not automatically processed to remove namespace prefixes from channel names. This is because the middleware doesn't have access to intercept the `next_event` method.
+`RedisClient#pubsub` returns a `RedisClient::PubSub` object that writes directly to the connection, bypassing the middleware chain entirely. Because of that, `RedisClient::Namespace::Middleware` alone cannot namespace `SUBSCRIBE`/`PSUBSCRIBE`/`PUBLISH` issued through `.pubsub`.
 
-If you're using Pub/Sub with the middleware approach, you'll need to manually handle namespace removal:
+To keep Pub/Sub consistent with the namespace applied to ordinary commands, this gem patches `RedisClient#pubsub` (see `RedisClient::Namespace::PubSubPatch`) to wrap the returned `PubSub` object whenever a `namespace` is configured. The wrapper namespaces outgoing channels/patterns the same way `Middleware#call` does, and strips the namespace back off `channel`/`pattern` on `subscribe`/`psubscribe`/`message`/`pmessage` events, so no manual handling is required:
 
 ```ruby
-# With middleware approach
-pubsub = client.pubsub
-pubsub.call("SUBSCRIBE", "channel1")  # Subscribes to "myapp:channel1"
+client = RedisClient.config(
+  middlewares: [RedisClient::Namespace::Middleware],
+  custom: { namespace: "myapp" }
+).new_client
 
-# You need to manually remove the namespace prefix from received events
+pubsub = client.pubsub
+pubsub.call("SUBSCRIBE", "channel1")  # Actually subscribes to "myapp:channel1"
+
+publisher = RedisClient.config(
+  middlewares: [RedisClient::Namespace::Middleware],
+  custom: { namespace: "myapp" }
+).new_client
+publisher.call("PUBLISH", "channel1", "hello")  # Actually publishes to "myapp:channel1"
+
 event = pubsub.next_event
-if event && event[0] == "message"
-  channel = event[1].delete_prefix("myapp:")  # Remove namespace manually
-  message = event[2]
-end
+event # => ["message", "channel1", "hello"] -- namespace prefix already removed
 ```
 
 

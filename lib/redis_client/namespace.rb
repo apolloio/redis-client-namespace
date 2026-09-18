@@ -4,6 +4,7 @@ require "redis-client"
 require_relative "namespace/version"
 require_relative "namespace/command_builder"
 require_relative "namespace/middleware"
+require_relative "namespace/pub_sub"
 
 class RedisClient
   # RedisClient::Namespace provides transparent key namespacing for redis-client.

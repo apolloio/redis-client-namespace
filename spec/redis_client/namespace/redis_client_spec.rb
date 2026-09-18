@@ -434,7 +434,7 @@ RSpec.describe "RedisClient::Namespace use by redis-client" do
   end
 
   describe "pubsub" do
-    xit "handles pubsub subscribe and publish with namespace (not supported by middleware)" do
+    it "handles pubsub subscribe and publish with namespace" do
       received_messages = []
       subscriber_ready = false
 
@@ -477,7 +477,7 @@ RSpec.describe "RedisClient::Namespace use by redis-client" do
                                       ])
     end
 
-    xit "handles psubscribe with pattern matching (not supported by middleware)" do
+    it "handles psubscribe with pattern matching" do
       received_messages = []
       subscriber_ready = false
 
